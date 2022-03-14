@@ -1,0 +1,194 @@
+PURPOSE
+
+The server will send the "movie" to the Javascript code, running on the
+player computer; JS will animate the movie for the user.
+
+FORMAT
+
+The format of the movie will be JSON, as described below.  Note that the movie
+format already assumes limited knowledge; it does *NOT* show all of the robots
+that are in motion; it shows all of the robots *known to a certain player*.
+For this reason, it has a "vanish" command, which can remove a given robot from
+the movie.
+
+The movie is formatted as a series of "robots" - each being a a sequence of
+actions/events that happen for one robot.  Each action or event is annotated
+with a time code, which is a time (or range of times) for the action to take
+place.  The lifetime of a "robot" in this system will always be continuous - no
+holes - although it may not cover the entire range of time for this movie; if
+the robot is for another player, the first event ("appear") may happen midway
+through the movie.  Likewise, a robot that is no longer in view (or has died)
+may "disappear".  Between the two ends, though, the sequence is always a
+contiguous range of times.  (Note that if a given enemy robot appears and
+disappears, and then appears again, we model this as two separate robots in the
+movie).
+
+The first event is always "appear" - it happens at a given instant (zero
+elapsed time) and gives a position on the screen.  If "disappear" is in the
+robot's sequence, then it must be the last event.  Other than that, any
+sequence of events is possible; the movie player is not expected to maintain
+robot state (except inasmuch as it needs to provide information to the user),
+and is not expected to validate that the moves follow the rules of the game.
+So long as the events in a given robot are in order, non-overlapping, and
+contiguous, the movie player should simply display the movie without any
+correction, editing, or sanity checks.
+
+TIME
+
+Time is modeled using integers, to prevent rounding issues; any time will be
+represented as a [second,tick] array, with 60 ticks per second.  Ranges of
+time will be represended as a four-element array: [s1,t1, s2,t2].
+
+A given movie will not, typically, start at time [0,0]; instead, the start
+time of the movie (which is, of course, the start time of a given turn in
+the game) will be included in the header of the message.  (This design is
+partially for player feedback - so they can see where they are in the game -
+and partially so that it woulld be trivial to assemble a movie of the entire
+game, simplly by appending the various robot sequences together).
+
+As noted above, some events take a range of time, and others are instantaneous.
+Ranges of time may never have zero length (and may never, of course, go
+backwards in time).  However, instantaneous events literally consume zero
+time; the time given for an instananeous event should be the same as the end
+time of the previous range event, and the start time of the next one.
+
+Any number of instantaneous events can take place at the same time, to the
+same robot; the movie player should execute them in the order they are given
+(although we expect that order will rarely be important).
+
+Instantaneous events, since they take no time, do not have associated
+animations - although we may (in the future) add animations which persist
+*after* the event, running in parallel with the robot's actions.  If we add
+this feature, we anticipate that these may be modeled like little tiny
+robots - that is, a sequence of contiguous events - albeit ones that will
+probably be buried inside the payload of the main robot sequence.
+
+LOCATION & DIRECTION
+
+Locations are given as [x,y] arrays, with [0,0] being the upper-left corner
+of the map.
+
+Directions are only used for robot facing; there are 8 possible directions,
+with 0 being N, 1 being NE, 2 being E, 4 being S, 7 being NW, etc.
+
+MAPS
+
+Each movie is associated with a map.  The URL of the map is provided in the
+movie metadata, along with the SHA256 hash of that file; movie players are
+encouraged to use the hash as the primary map identifier, and only access the
+URL if the map with the given hash is not known to the movie player.
+
+EXAMPLE MOVIE
+
+  {
+    "metadata": {
+        "map": {
+            "hash": "abc123d7abc123d7abc123d7abc123d7abc123d7abc123d7abc123d7abc123d7",
+            "url": "https://github.com/russ-lewis/robo_commander/maps/abc123.map"
+          },
+        "start_time": [15,0]
+      },
+    "robots": [
+        [
+          { "time": [15,0],
+            "event": "appear",
+            "location": [10,20],
+            "color": [255,0,0],
+            "model": "rifle",
+            "posture": "upright",
+            "facing": 2
+            },
+
+          { "time": [15,0,16,0],
+            "event": "move",
+            "start_location": [10,20],
+            "end_location": [30,20],
+            "posture": "upright",
+            "facing": 2
+            },
+
+          { "time": [16,0,16,30],
+            "event": "change_posture",
+            "from": "upright",
+            "to": "crouch",
+            "facing": 2,
+            "location": [30,20]
+          },
+
+          { "time": [16,30,17,0],
+            "event": "change_posture",
+            "from": "crouch",
+            "to": "sitting",
+            "facing": 2,
+            "location": [30,20]
+          },
+
+          { "time": [17,0,17,15],
+            "event": "change_facing",
+            "from": 2,
+            "to": 3,
+            "posture": "sitting",
+            "location": [30,20]
+          },
+
+          { "time": [17,15,19,10],
+            "event": "idle",
+            "posture": "sitting",
+            "facing": 3,
+            "location": [30,20]
+          },
+
+          { "time": [19,10,19,15],
+            "event": "fire_gun",
+            "posture": "sitting",
+            "facing": 3,
+            "location": [30,20]
+          },
+
+          { "time": [19,15,20,0],
+            "event": "idle",
+            "posture": "sitting",
+            "facing": 3,
+            "location": [30,20]
+          }
+        ],
+
+        [
+          { "time": [18,45],
+            "event": "appear",
+            "location": [70,50],
+            "color": [0,255,0],
+            "model": "rocket",
+            "posture": "upright",
+            "facing": 2
+            },
+
+          { "time": [18,45,19,45],
+            "event": "move",
+            "start_location": [70,50],
+            "end_location": [90,30],
+            "posture": "upright",
+            "facing": 2
+            },
+
+          { "time": [19,45],
+            "event": "disappear"
+            }
+        ]
+      ]
+  }
+
+
+
+EVENT TYPES
+
+TODO
+
+
+
+
+
+
+
+
+

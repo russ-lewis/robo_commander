@@ -93,7 +93,7 @@ EXAMPLE MOVIE
           { "time": [15,0],
             "event": "appear",
             "location": [10,20],
-            "color": [255,0,0],
+            "color": "#ff0000",
             "model": "rifle",
             "posture": "upright",
             "facing": 2

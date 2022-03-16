@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Robo Commander</title>
+        <style>
+            body {
+                overflow-wrap: break-word;
+                word-break: break-all;
+            }
+
+            canvas {
+                background: #eeeeee;
+                display: block;
+                //margin: 0 auto;
+                border-style: solid;
+                border-width: 1px;
+            }
+
+            .flex {
+                display: flex;
+            }
+            .margin {
+                margin: 8px;
+                display: inline-block;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="flex">
+            <div class="margin">
+                <canvas id="main-canvas" width="1000" height="500"></canvas>
+            </div>
+            <div class="margin">
+                <pre id="text-box">Javascript should display data here...</pre>
+            </div>
+        </div>
+
+        <!--<script src=//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>--><script>!function(f,a,c){var s,l=256,p="random",d=c.pow(l,6),g=c.pow(2,52),y=2*g,h=l-1;function n(n,t,r){function e(){for(var n=u.g(6),t=d,r=0;n<g;)n=(n+r)*l,t*=l,r=u.g(1);for(;y<=n;)n/=2,t/=2,r>>>=1;return(n+r)/t}var o=[],i=j(function n(t,r){var e,o=[],i=typeof t;if(r&&"object"==i)for(e in t)try{o.push(n(t[e],r-1))}catch(n){}return o.length?o:"string"==i?t:t+"\0"}((t=1==t?{entropy:!0}:t||{}).entropy?[n,S(a)]:null==n?function(){try{var n;return s&&(n=s.randomBytes)?n=n(l):(n=new Uint8Array(l),(f.crypto||f.msCrypto).getRandomValues(n)),S(n)}catch(n){var t=f.navigator,r=t&&t.plugins;return[+new Date,f,r,f.screen,S(a)]}}():n,3),o),u=new m(o);return e.int32=function(){return 0|u.g(4)},e.quick=function(){return u.g(4)/4294967296},e.double=e,j(S(u.S),a),(t.pass||r||function(n,t,r,e){return e&&(e.S&&v(e,u),n.state=function(){return v(u,{})}),r?(c[p]=n,t):n})(e,i,"global"in t?t.global:this==c,t.state)}function m(n){var t,r=n.length,u=this,e=0,o=u.i=u.j=0,i=u.S=[];for(r||(n=[r++]);e<l;)i[e]=e++;for(e=0;e<l;e++)i[e]=i[o=h&o+n[e%r]+(t=i[e])],i[o]=t;(u.g=function(n){for(var t,r=0,e=u.i,o=u.j,i=u.S;n--;)t=i[e=h&e+1],r=r*l+i[h&(i[e]=i[o=h&o+t])+(i[o]=t)];return u.i=e,u.j=o,r})(l)}function v(n,t){return t.i=n.i,t.j=n.j,t.S=n.S.slice(),t}function j(n,t){for(var r,e=n+"",o=0;o<e.length;)t[h&o]=h&(r^=19*t[h&o])+e.charCodeAt(o++);return S(t)}function S(n){return String.fromCharCode.apply(0,n)}if(j(c.random(),a),"object"==typeof module&&module.exports){module.exports=n;try{s=require("crypto")}catch(n){}}else"function"==typeof define&&define.amd?define(function(){return n}):c["seed"+p]=n}("undefined"!=typeof self?self:this,[],Math);</script>
+        <script>
+function mod(a, b) {
+  return ((a % b) + b) % b;
+};
+
+function within(x, min, max) {
+    if(x < min) {
+        return false;
+    } else if(x > max) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function constrain(x, min, max) {
+    if(x < min) {
+        return min;
+    } else if(x > max) {
+        return max;
+    } else {
+        return x;
+    }
+}
+
+function randint(min, max, rng) {
+    // inclusive min, exclusive max
+    if(rng) {
+        return Math.floor(rng() * (max - min)) + min;
+    } else {
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+}
+
+function popAtIndex(array, index) {
+    var item = array[index];
+    array.splice(index, 1);
+    return item;
+}
+
+function popAtRandom(array, rng) {
+    return popAtIndex(array, randint(0, array.length, rng));
+}
+
+function intDiv(a, b) {
+    return Math.floor(a / b);
+}
+
+
+const GRASS = 0;
+const WALL = 1;
+function createMap(width, height) {
+    var map = [];
+    for(let i=0; i<mapWidth; i++) {
+        map.push([]);
+        for(let j=0; j<mapHeight; j++) {
+            map[i].push(GRASS);
+        }
+    }
+    return map;
+}
+
+
+// class SimulationHandle {
+//     constructor() {
+//         this.updatables = [];
+//         this.ticks = -1;
+//     }
+
+//     add(updatable) {
+//         this.updatables.push(updatable);
+//     }
+// }
+
+// class Updatable {
+//     constructor(handle) {
+//         this.handle = handle;
+//     }
+// }
+
+class Robot {
+    constructor(location, color, model, posture, facing) {
+        this.location = location;
+        this.color = color;
+        this.model = model;
+        this.posture = posture;
+        this.facing = facing;
+    }
+
+    render() {
+        var x = (this.location[0] + 0.5) * tileSize;
+        var y = (this.location[1] + 0.5) * tileSize;
+        var angle1 = (this.facing - 2) * Math.PI / 4;
+        var angle2 = angle1 + Math.PI * 2 / 3;
+        var angle3 = angle2 + Math.PI * 2 / 3;
+        var radius = tileSize * 0.5; 
+        
+        ctx.beginPath();
+        ctx.moveTo(
+            Math.cos(angle1) * radius + x,
+            Math.sin(angle1) * radius + y
+        );
+        ctx.lineTo(
+            Math.cos(angle2) * radius * 0.8 + x,
+            Math.sin(angle2) * radius * 0.8 + y
+        );
+        ctx.lineTo(
+            Math.cos(angle3) * radius * 0.8 + x,
+            Math.sin(angle3) * radius * 0.8 + y
+        );
+        ctx.closePath();
+        ctx.fillStyle = this.color;
+        ctx.fill();
+    }
+}
+
+
+function click(x, y) {
+    if(!isOnMap(x, y)) {
+        return;
+    }
+}
+
+function rightClick(x, y) {
+    if(!isOnMap(x, y)) {
+        return;
+    }
+}
+
+
+function drawTile(x, y) {    
+    var t = map[x][y];
+    var odd = (x + y) % 2;
+    
+    ctx.beginPath();
+    ctx.rect(
+        x*tileSize, y*tileSize,
+        tileSize, tileSize
+    );
+    if(t == GRASS) {
+        if(odd) {
+            ctx.fillStyle = "#a2d149";
+        } else {
+            ctx.fillStyle = "#aad751";
+        }
+    } else if(t == WALL) {
+        ctx.fillStyle = "#818589";
+    }
+    ctx.fill();
+    ctx.closePath();
+}
+
+var tick = 0;
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for(let i=0; i<mapWidth; i++) {
+        for(let j=0; j<mapHeight; j++) {
+            drawTile(i, j);
+        }
+    }
+
+    for(let i=0; i<robots.length; i++) {
+        robots[i].facing = intDiv(tick, 60);
+        robots[i].render();
+    }
+
+    tick++;
+}
+
+const keysPressed = {};
+function keyDownHandler(e) {
+    keysPressed[e.key] = true;
+}
+function keyUpHandler(e) {
+    keysPressed[e.key] = false;
+}
+
+var canvasMouseX = -1;
+var canvasMouseY = -1;
+var tileSelectedX = -1;
+var tileSelectedY = -1;
+function mouseMoveHandler(e) {
+    canvasMouseX = e.clientX - canvasRect.left;
+    canvasMouseY = e.clientY - canvasRect.top;
+    tileSelectedX = intDiv(canvasMouseX, tileSize);
+    tileSelectedY = intDiv(canvasMouseY, tileSize);
+}
+function clickHandler(e) {
+    mouseMoveHandler(e);
+    click(tileSelectedX, tileSelectedY);
+}
+function rightClickHandler(e) {
+    e.preventDefault();
+    mouseMoveHandler(e);
+    rightClick(tileSelectedX, tileSelectedY);
+}
+
+
+var canvas = document.getElementById("main-canvas");
+var ctx = canvas.getContext("2d");
+var canvasRect = canvas.getBoundingClientRect()
+
+var textBox = document.getElementById("text-box");
+
+
+var tileSize = 30;
+var mapWidth = intDiv(canvas.width, tileSize);
+var mapHeight = intDiv(canvas.height, tileSize);
+            
+var map = createMap(mapWidth, mapHeight);
+map[1][1] = WALL;
+
+var robots = [new Robot([3, 3], "#ff0000", "rifle", "upright", 2)];
+
+
+setInterval(draw, 16.7);
+
+// https://www.w3schools.com/jsref/dom_obj_event.asp
+document.addEventListener("keydown", keyDownHandler);
+document.addEventListener("keyup", keyUpHandler);
+document.addEventListener("mousemove", mouseMoveHandler);
+document.addEventListener("click", clickHandler);
+canvas.addEventListener("contextmenu", rightClickHandler);
+        </script>
+    </body>
+</html>
